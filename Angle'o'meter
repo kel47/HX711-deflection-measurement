@@ -1,0 +1,36 @@
+//ANGLE'O'METER by Kel Smellie
+
+#include <Servo.h>
+
+Servo Servo;
+const int SERVO_PIN = 9;
+int currentAngle = 31; //angle from old code
+
+void setup() {
+  Serial.begin(115200);
+  Servo.attach(SERVO_PIN);
+  Servo.write(currentAngle);
+ 
+  Serial.println("-- ANGLE'O'METER --");
+  Serial.println("Press '+' to increase angle by 1 degree");
+  Serial.println("Press '-' to decrease angle by 1 degree");
+  Serial.print("Current Angle: "); Serial.println(currentAngle);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    char c = Serial.read();
+   
+    if (c == '+') currentAngle++;
+    if (c == '-') currentAngle--;
+   
+    currentAngle = constrain(currentAngle, 0, 180);
+    Servo.write(currentAngle);
+   
+    Serial.print("Angle: "); Serial.println(currentAngle);
+    
+    /*a ruler is used to measure the beam's deflection and the 
+    angles are recorded when the deflection is at 2mm and 4mm */
+  }
+}
+
