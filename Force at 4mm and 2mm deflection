@@ -1,0 +1,71 @@
+//Hopefully Last Code by Kel Smellie
+#include "HX711.h"
+#include <Servo.h>
+
+//code uses angles already found, puts servo to the angles, and measures the force.
+
+// Pins
+const uint8_t HX711_DATA = 3, HX711_CLK = 2, SERVO_PIN = 9;
+
+const int POS_ORIGINAL = 31;
+const int POS_2MM = 27;  // the angle found for 2mm deflection
+const int POS_4MM = 25;  // the angle found at 4mm
+const float myScaleFactor = 284.5910038;
+const long myOffset = 17833; // offset and scale found in calibration
+
+HX711 scale;
+Servo Servo;
+
+void setup() {
+  Serial.begin(115200);
+  scale.begin(HX711_DATA, HX711_CLK);
+  scale.set_scale(myScaleFactor);
+  scale.set_offset(myOffset);
+ 
+  Servo.attach(SERVO_PIN);
+  Servo.write(POS_ORIGINAL);
+ 
+  delay(2000);
+  Serial.println("\nReady. Type 'START' to begin test.");
+}
+
+void loop() {
+  if (Serial.available()) { //makes code availiable until 'start' is typed
+    String cmd = Serial.readStringUntil('\n');
+    if (cmd.indexOf("START") > -1) runTest();
+  }
+}
+
+void runTest() {
+  float sum2mm = 0, sum4mm = 0;
+
+  for (int i = 1; i <= 5; i++) {
+    Serial.print("\nIteration "); Serial.println(i);
+
+    Servo.write(POS_ORIGINAL);
+    delay(2000);
+    scale.tare(10); //zeros scale at 31 degrees, 10 is sample count to get stable reading
+
+    // move to 2mm
+    Servo.write(POS_2MM);
+    delay(1500);
+    float r2 = abs(scale.get_units(10)); // use abs in case of reverse wiring (or load cell upside down)
+    sum2mm += r2;
+    Serial.print("  2mm Force: "); Serial.println(r2);
+
+    // move to 4mm
+    Servo.write(POS_4MM);
+    delay(1500);
+    float r4 = abs(scale.get_units(10));
+    sum4mm += r4;
+    Serial.print("  4mm Force: "); Serial.println(r4);
+
+    // return to start
+    Servo.write(POS_ORIGINAL);
+  }
+
+  Serial.println("\n--- FINAL RESULTS ---");
+  Serial.print("Mean @ 2mm: "); Serial.print(sum2mm / 5.0); Serial.println(" g"); //loop runs 5 times and then divides to get mean
+  Serial.print("Mean @ 4mm: "); Serial.print(sum4mm / 5.0); Serial.println(" g");
+}
+
